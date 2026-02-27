@@ -1,0 +1,23 @@
+# Virtual environment
+venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+
+# Audio output
+*.wav
+
+# Reference materials (large binaries, extract from standard.zip)
+references/
+
+# Original zips (already extracted)
+*.zip
