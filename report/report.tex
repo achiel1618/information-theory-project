@@ -1,0 +1,125 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{float}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{listings}
+\usepackage[margin=2.5cm]{geometry}
+
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\bfseries,
+    breaklines=true,
+    frame=single
+}
+
+\title{Project Information Theory\\Compact Disc Digital Audio\\[0.5em]\large Group 24}
+\author{
+    Debrabandere, Mendel \\
+    \and
+    D'Hooghe, Achiel \\
+    \and
+    Loones, Louis \\
+    \and
+    Ureel, Bram
+}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\section{Task Division}
+% Describe how you divided the tasks among group members and who did what.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ll}
+    \toprule
+    \textbf{Member} & \textbf{Tasks} \\
+    \midrule
+    Name 1 & \\
+    Name 2 & \\
+    Name 3 & \\
+    Name 4 & \\
+    \bottomrule
+\end{tabular}
+\end{table}
+
+\section{Audio CD Subcode}
+
+\subsection{Subcode Datarate}
+% Q1: What is the datarate of the subcode in subcode blocks/s? And in bit/s?
+
+\subsection{P Channel Flag Bit}
+% Q2: Complete Figure 3 with the state of the channel P flag bit.
+
+\subsection{Track Information}
+% Q3: How does the CD player know the number of tracks, starting positions, and total playing time? How is this data protected from errors?
+
+\section{Reed-Solomon Code}
+
+\subsection{Encoding}
+
+\subsubsection{Primitive Polynomial}
+% Q1a: Show that p(D) = D^8 + D^4 + D^3 + D^2 + 1 is a primitive polynomial with root alpha for GF(2^8).
+
+\subsubsection{Generator Polynomial}
+% Q1b: Construct g(x) for the C1 RS code. Give coefficients g_i in GF(2^8). What is m_0?
+
+\subsubsection{Check Polynomial}
+% Q1c: Give the check polynomial h(x). First and last 5 terms sufficient.
+
+\subsubsection{Minimum Hamming Distance}
+% Q1d: What is the minimal Hamming distance? Use the MDS property.
+
+\subsubsection{Reed-Solomon vs.\ Binary BCH}
+% Q1e: Why is RS more appropriate for data protection than binary BCH?
+
+\subsubsection{Implementation of \texttt{makeGenerator()} and \texttt{encode()}}
+% Q1f: Describe your implementation.
+
+\subsection{Decoding}
+
+\subsubsection{Bit Error Correction Capability}
+% Q2a: How many erroneous bits can C1 always correct? Maximum correctable?
+
+\subsubsection{Bit Error Rate vs.\ Symbol Error Rate}
+% Q2b: Relationship between P_b and P_s for GF(2^8).
+
+\subsubsection{Implementation of \texttt{decode()}}
+% Q2c: Describe your decoding algorithm.
+
+\section{Audio Encoding in CDs}
+
+\subsection{CIRC Structure}
+% Q1: Explain the function of every component of the CIRC structure (figures 12 and 13 of the standard). Which error types does C1 protect against? And C2?
+
+\subsection{Implementation of AudioCD Functions}
+% Q2: Describe your implementation of the AudioCD class functions.
+
+\subsection{Maximum Correctable Burst}
+% Q3: Maximum burst duration (bits) assuming C2 corrects 4 erasures. Translate to scratch width at 1.3 m/s. Compare with simulation results.
+
+\subsection{Linear Interpolation}
+% Q4: Describe why interpolation of max 8 subsequent samples works. Relation with sample frequency.
+
+\subsection{Performance Comparison}
+
+\subsubsection{Scratch Errors}
+% Q5a: Scratches of 100, 3000, and 10000 databits wide, period 600000 bits.
+
+\subsubsection{Random Bit Errors}
+% Q5b: Bit error probability p between 0.05 and 0.001. Plot erasure probability and failed interpolation probability for configs 1, 2, and 3.
+
+\subsection{EFM Modulation}
+% Q6: What is EFM and why is it used? Could the EFM demodulator help error correction?
+
+\end{document}
