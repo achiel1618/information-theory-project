@@ -321,7 +321,28 @@ class AudioCD:
         #  -n_frames:  the length of the output expressed in frames (changed from input because of delay!)
         assert len(np.shape(input))==1 and type(input) is np.ndarray, 'input must be a 1D numpy array'
 
-        #insert your code here
+        FRAME_SIZE = 32
+
+        n_frames -= 1  # one frame lost due to maximum delay of 1
+        output = np.zeros(n_frames * FRAME_SIZE, dtype=input.dtype)
+
+        # Rows that get a 1-frame delay // Every odd one
+        delayed_rows = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31]
+
+        # Rows that get inverted (Q and P parity bytes)
+        inverted_rows = [12, 13, 14, 15, 28, 29, 30, 31]
+
+        for frame in range(n_frames):
+            for byte in range(FRAME_SIZE):
+                if byte in delayed_rows:
+                    val = input[(frame+1) * FRAME_SIZE + byte]  
+                else:
+                    val = input[(frame) * FRAME_SIZE + byte]  
+
+                if byte in inverted_rows:
+                    val ^= 0xFF
+
+                output[frame * FRAME_SIZE + byte] = val
 
         assert len(np.shape(output))==1 and type(output) is np.ndarray, 'output must be a 1D numpy array'
         return (output,n_frames)
@@ -337,8 +358,36 @@ class AudioCD:
         #  -n_frames: the length of the output expressed in frames
         assert len(np.shape(input))==1 and type(input) is np.ndarray, 'input must be a 1D numpy array'
 
-        #insert your code here
+        FRAME_IN = 32   # 24 data + 4 C1 parity
+        FRAME_OUT = 28
 
+
+        data = input.astype('B')
+        output = np.zeros(int(n_frames * FRAME_OUT), dtype='B')
+        erasure_flags_out = np.zeros(int(n_frames * FRAME_OUT))
+
+        # Each frame is 32 bytes: 28 data + 4 C1 parity bytes
+        for i in range(int(n_frames)):
+            frame = data[i*FRAME_IN:(i+1)*FRAME_IN] 
+            try:
+                (decoded, _, errata_pos) = self.rsc1.decode(frame, erase_pos=None)
+                n_errors = len(errata_pos)
+                output_dec = list(decoded)[-FRAME_OUT:]
+
+            except Exception as e:
+                n_errors = -1
+                output_dec = list(frame[:FRAME_OUT])
+
+            if n_errors == -1:
+                 # 2+ errors: can't correct reliably, flag entire frame as erasure
+                output[i*FRAME_OUT:(i+1)*FRAME_OUT] = output_dec
+                erasure_flags_out[i*FRAME_OUT:(i+1)*FRAME_OUT] = 1
+            else:
+                # 0 or 1 error: correction succeeded, no erasure flags
+                output[i*FRAME_OUT:(i+1)*FRAME_OUT] = output_dec
+               
+
+        # Amount of frames stays the same, now 28 bytes per frame
         assert len(np.shape(output))==1 and type(output) is np.ndarray, 'output must be a 1D numpy array'
         assert len(np.shape(erasure_flags_out))==1 and type(erasure_flags_out) is np.ndarray, 'erasure_flags_out must be a 1D numpy array'
         return (output,erasure_flags_out,n_frames)
@@ -356,7 +405,21 @@ class AudioCD:
         assert len(np.shape(input))==1 and type(input) is np.ndarray, 'input must be a 1D numpy array'
         assert len(np.shape(erasure_flags_in))==1 and type(erasure_flags_in) is np.ndarray, 'erasure_flags_in must be a 1D numpy array'
 
-        #insert your code here
+        FRAME_SIZE = 28
+        D = 4  # delay unit in frames (D=4 as shown in figure)
+        max_delay = 27 * D  # 108 frames (byte 0 gets max delay, byte 27 gets 0)
+        n_frames = n_frames - max_delay
+
+        output = np.zeros(n_frames * FRAME_SIZE, dtype=input.dtype)
+        erasure_flags_out = np.zeros(n_frames * FRAME_SIZE)
+
+        # Byte i gets (27-i)*D frames of look-ahead to undo encoder's i*D delay
+        for frame in range(n_frames):
+            for byte in range(FRAME_SIZE): #Go byte per byte 
+                delay = (byte) * D   
+                src = (frame + delay) * FRAME_SIZE + byte
+                output[frame * FRAME_SIZE + byte] = input[src]
+                erasure_flags_out[frame * FRAME_SIZE + byte] = erasure_flags_in[src]
 
         assert len(np.shape(output))==1 and type(output) is np.ndarray, 'output must be a 1D numpy array'
         assert len(np.shape(erasure_flags_out))==1 and type(erasure_flags_out) is np.ndarray, 'erasure_flags_out must be a 1D numpy array'
@@ -375,7 +438,31 @@ class AudioCD:
         assert len(np.shape(input))==1 and type(input) is np.ndarray, 'input must be a 1D numpy array'
         assert len(np.shape(erasure_flags_in))==1 and type(erasure_flags_in) is np.ndarray, 'erasure_flags_in must be a 1D numpy array'
 
-        #insert your code here
+        FRAME_IN = 28   # 24 data + 4 C2 parity
+        FRAME_OUT = 24
+        data = input.astype('B')
+        output = np.zeros(n_frames * FRAME_OUT, dtype='B')
+        erasure_flags_out = np.zeros(n_frames * FRAME_OUT)
+
+        for i in range(n_frames):
+            frame = data[i*FRAME_IN:(i+1)*FRAME_IN]
+
+            # Pass C1 erasure positions as hints to the RS decoder, tells decoder we suspect those are errors
+            erase_pos = list(np.nonzero(erasure_flags_in[i*FRAME_IN:(i+1)*FRAME_IN])[0])
+            try:
+                (decoded, _, err) = self.rsc2.decode(frame, erase_pos=erase_pos)
+                ERR=len(err)
+                output_dec=list(decoded)
+                output_dec=output_dec[-24:]
+            except Exception as e:
+                ERR=-1
+                output_dec=frame
+
+            if ERR == -1:
+                output[(i)*24:(i+1)*24] = output_dec[:24]
+                erasure_flags_out[(i)*24:(i+1)*24] = 1
+            else:
+                output[(i)*24:(i+1)*24] = output_dec
 
         assert len(np.shape(output))==1 and type(output) is np.ndarray, 'output must be a 1D numpy array'
         assert len(np.shape(erasure_flags_out))==1 and type(erasure_flags_out) is np.ndarray, 'erasure_flags_out must be a 1D numpy array'
@@ -394,7 +481,45 @@ class AudioCD:
         assert len(np.shape(input))==1 and type(input) is np.ndarray, 'input must be a 1D numpy array'
         assert len(np.shape(erasure_flags_in))==1 and type(erasure_flags_in) is np.ndarray, 'erasure_flags_in must be a 1D numpy array'
 
-        #insert your code here
+        FRAME_SIZE = 24
+        max_delay = 2  # encoder delayed 6 of the 12 pairs by 2 frames
+        n_frames = int(n_frames) - max_delay
+
+        output = np.zeros(n_frames * FRAME_SIZE, dtype=input.dtype)
+        erasure_flags_out = np.zeros(n_frames * FRAME_SIZE)
+
+        # Routing table: (input_pair, output_pair, delayed) — pairs are 1-indexed.
+        # "Delayed" pairs need a 2-frame look-ahead to undo the encoder's 2-frame delay.
+        routing = [
+            (1,  1,  False),
+            (2,  5,  False),
+            (3,  9,  False),
+            (4,  2,  True),
+            (5,  6,  False),
+            (6,  10, False),
+            (7,  3,  True),
+            (8,  7,  True),
+            (9,  11, False),
+            (10, 4,  True),
+            (11, 8,  True),
+            (12, 12, True),
+        ]
+
+        # Build per-output-byte map: output_byte -> (input_byte, delayed)
+        byte_map = {}
+        for in_pair, out_pair, delayed in routing:
+            in_b  = (in_pair  - 1) * 2
+            out_b = (out_pair - 1) * 2
+            byte_map[out_b]     = (in_b,     delayed)
+            byte_map[out_b + 1] = (in_b + 1, delayed)
+
+        for frame in range(n_frames):
+            for out_byte in range(FRAME_SIZE):
+                in_byte, delayed = byte_map[out_byte]
+                src_frame = frame + 2 if delayed else frame
+                src = src_frame * FRAME_SIZE + in_byte
+                output[frame * FRAME_SIZE + out_byte] = input[src]
+                erasure_flags_out[frame * FRAME_SIZE + out_byte] = erasure_flags_in[src]
 
         assert len(np.shape(output))==1 and type(output) is np.ndarray, 'output must be a 1D numpy array'
         assert len(np.shape(erasure_flags_out))==1 and type(erasure_flags_out) is np.ndarray, 'erasure_flags_out must be a 1D numpy array'
