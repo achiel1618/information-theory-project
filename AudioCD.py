@@ -247,6 +247,28 @@ class AudioCD:
 
         #insert your code here
 
+        n_frames = int(n_frames)
+        assert len(input) == n_frames * 24, 'we assume a 24-byte frame'
+
+        # reshape to [frame, 12 words, 2 bytes(A,B)]
+        data = input.astype('B').reshape((n_frames, 12, 2))
+
+        # because part of the output comes from frame n-2
+        n_frames_out = n_frames + 2
+        temp = np.zeros((n_frames_out, 24), dtype='B')
+
+        # Figure 12 interleaving sequence
+        delayed_words = [0, 4, 8, 1, 5, 9]  # taken from frame n-2
+        current_words = [2, 6, 10, 3, 7, 11]  # taken from frame n
+
+        temp[2:, 0:12] = data[:, delayed_words, :].reshape(n_frames, 12)
+        temp[:n_frames, 12:24] = data[:, current_words, :].reshape(n_frames, 12)
+
+        output = temp.reshape(-1)
+        n_frames = n_frames_out
+
+        # end of my code
+
         assert len(np.shape(output))==1 and type(output) is np.ndarray, 'output must be a 1D numpy array'
         return (output,n_frames)
 
@@ -263,6 +285,30 @@ class AudioCD:
 
         #insert your code here
 
+        n_frames = int(n_frames)
+        assert len(input) == n_frames * 24
+
+        data = input.astype('B').reshape((n_frames, 24))
+
+        output = np.zeros(n_frames * 28, dtype='B')
+
+        for i in range(n_frames):
+            frame = data[i, :]
+
+            # encode frame with parity bytes
+            encoded = self.rsc2.encode(frame)
+            encoded = np.array(list(encoded), dtype='B')
+
+            # force parity bytes to be in the center of the frame
+            parity = encoded[24:28]
+            rearranged = np.concatenate([
+                frame[:12],
+                parity,
+                frame[12:]
+            ])
+            output[i * 28:(i + 1) * 28] = rearranged
+        # end of my code
+
         assert len(np.shape(output))==1 and type(output) is np.ndarray, 'output must be a 1D numpy array'
         return (output,n_frames)
 
@@ -277,6 +323,27 @@ class AudioCD:
         assert len(np.shape(input))==1 and type(input) is np.ndarray, 'input must be a 1D numpy array'
 
         #insert your code here
+
+        n_frames = int(n_frames)
+        assert len(input) == n_frames * 28, 'we assume a 28-byte frame'
+
+        data = input.astype('B').reshape((n_frames, 28))
+
+        # Figure 12: delays are 0D,1D,...,27D with D = 4 frames
+        delays = 4 * np.arange(28, dtype=int)
+        max_delay = int(np.max(delays))
+
+        n_frames_out = n_frames + max_delay
+        temp = np.zeros((n_frames_out, 28), dtype='B')
+
+        for j in range(28):
+            d = delays[j]
+            temp[d:d + n_frames, j] = data[:, j]
+
+        output = temp.reshape(-1)
+        n_frames = n_frames_out
+
+        # end of my code
 
         assert len(np.shape(output))==1 and type(output) is np.ndarray, 'output must be a 1D numpy array'
         return (output,n_frames)
@@ -293,6 +360,18 @@ class AudioCD:
 
         #insert your code here
 
+        n_frames = int(n_frames)
+        assert len(input) == n_frames * 28, 'we assume a 28-byte frame'
+
+        data = input.astype('B').reshape((n_frames, 28))
+        output = np.zeros(n_frames * 32, dtype='B')
+
+        for i in range(n_frames):
+            encoded = self.rsc1.encode(data[i, :])
+            output[i * 32:(i + 1) * 32] = np.array(list(encoded), dtype='B')
+
+        # end of my code
+
         assert len(np.shape(output))==1 and type(output) is np.ndarray, 'output must be a 1D numpy array'
         return (output,n_frames)
 
@@ -307,6 +386,28 @@ class AudioCD:
         assert len(np.shape(input))==1 and type(input) is np.ndarray, 'input must be a 1D numpy array'
 
         #insert your code here
+
+        n_frames = int(n_frames)
+        assert len(input) == n_frames * 32, 'we assume a 32-byte frame'
+
+        data = input.astype('B').reshape((n_frames, 32))
+
+        # 1-frame delay on even-indexed symbol lines (0,2,4,...,30)
+        n_frames_out = n_frames + 1
+        temp = np.zeros((n_frames_out, 32), dtype='B')
+
+        temp[1:, 0::2] = data[:, 0::2]  # delayed by 1 frame
+        temp[:n_frames, 1::2] = data[:, 1::2]  # no extra delay
+
+        # Invert C2 parity symbols Q0..Q3 and C1 parity symbols P0..P3
+        # Figure 12 shows inversion on output positions 12..15 and 28..31
+        temp[:, 12:16] = np.bitwise_xor(temp[:, 12:16], 0xFF)
+        temp[:, 28:32] = np.bitwise_xor(temp[:, 28:32], 0xFF)
+
+        output = temp.reshape(-1)
+        n_frames = n_frames_out
+
+        # end of my code
 
         assert len(np.shape(output))==1 and type(output) is np.ndarray, 'output must be a 1D numpy array'
         return (output,n_frames)
