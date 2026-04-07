@@ -413,6 +413,7 @@ class AudioCD:
         return (output,n_frames)
 
     def CIRC_dec_delay_inv(self,input,n_frames):
+        n_frames = int(n_frames)
         # CIRC Decoder: Delay of 1 frame + inversions
         # Input:
         #  -input: the input to this block of the CIRC decoder (1D numpy array)
@@ -427,8 +428,8 @@ class AudioCD:
         n_frames -= 1  # one frame lost due to maximum delay of 1
         output = np.zeros(n_frames * FRAME_SIZE, dtype=input.dtype)
 
-        # Rows that get a 1-frame delay // Every odd one
-        delayed_rows = [1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, 25, 27, 29, 31]
+        # Rows that get a 1-frame look-ahead // Every even one (encoder delayed even bytes)
+        delayed_rows = [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30]
 
         # Rows that get inverted (Q and P parity bytes)
         inverted_rows = [12, 13, 14, 15, 28, 29, 30, 31]
@@ -449,6 +450,7 @@ class AudioCD:
         return (output,n_frames)
 
     def CIRC_dec_C1(self,input,n_frames):
+        n_frames = int(n_frames)
         # CIRC Decoder: C1 decoder
         # Input:
         #  -input: the input to this block of the CIRC decoder (1D numpy array)
@@ -484,7 +486,7 @@ class AudioCD:
                 output[i*FRAME_OUT:(i+1)*FRAME_OUT] = output_dec
                 erasure_flags_out[i*FRAME_OUT:(i+1)*FRAME_OUT] = 1
             else:
-                # 0 or 1 error: correction succeeded, no erasure flags
+                # 0 or 1 error: correction succeeded, no flags
                 output[i*FRAME_OUT:(i+1)*FRAME_OUT] = output_dec
                
 
@@ -494,6 +496,7 @@ class AudioCD:
         return (output,erasure_flags_out,n_frames)
 
     def CIRC_dec_delay_unequal(self,input,erasure_flags_in,n_frames):
+        n_frames = int(n_frames)
         # CIRC Decoder: Delay lines of unequal length
         # Input:
         #  -input: the input to this block of the CIRC decoder (1D numpy array)
@@ -527,6 +530,7 @@ class AudioCD:
         return (output,erasure_flags_out,n_frames)
 
     def CIRC_dec_C2(self,input,erasure_flags_in,n_frames):
+        n_frames = int(n_frames)
         # CIRC Decoder: C2 decoder
         # Input:
         #  -input: the input to this block of the CIRC decoder (1D numpy array)
@@ -548,10 +552,20 @@ class AudioCD:
         for i in range(n_frames):
             frame = data[i*FRAME_IN:(i+1)*FRAME_IN]
 
+            # Rearrange from encoder layout [D0..D11 | P0..P3 | D12..D23]
+            # to RS codec layout            [D0..D23 | P0..P3]
+            frame_rs = np.concatenate([frame[:12], frame[16:28], frame[12:16]])
+
+            # Remap erase_pos from encoder layout to RS codec layout
+            # p in [0,11]  -> p (unchanged)
+            # p in [12,15] -> p + 12  (parity: 12->24, ..., 15->27)
+            # p in [16,27] -> p - 4   (data:   16->12, ..., 27->23)
+            raw_erase = list(np.nonzero(erasure_flags_in[i*FRAME_IN:(i+1)*FRAME_IN])[0])
+            erase_pos = [p if p < 12 else (p + 12 if p < 16 else p - 4) for p in raw_erase]
+
             # Pass C1 erasure positions as hints to the RS decoder, tells decoder we suspect those are errors
-            erase_pos = list(np.nonzero(erasure_flags_in[i*FRAME_IN:(i+1)*FRAME_IN])[0])
             try:
-                (decoded, _, err) = self.rsc2.decode(frame, erase_pos=erase_pos)
+                (decoded, _, err) = self.rsc2.decode(frame_rs, erase_pos=erase_pos)
                 ERR=len(err)
                 output_dec=list(decoded)
                 output_dec=output_dec[-24:]
@@ -570,6 +584,7 @@ class AudioCD:
         return (output,erasure_flags_out,n_frames)
 
     def CIRC_dec_deinterleave_delay(self,input,erasure_flags_in,n_frames):
+        n_frames = int(n_frames)
         # CIRC Decoder: De-interleaving sequence + delay of 2 frames
         # Input:
         #  -input: the input to this block of the CIRC decoder (1D numpy array)
@@ -592,18 +607,18 @@ class AudioCD:
         # Routing table: (input_pair, output_pair, delayed) — pairs are 1-indexed.
         # "Delayed" pairs need a 2-frame look-ahead to undo the encoder's 2-frame delay.
         routing = [
-            (1,  1,  False),
-            (2,  5,  False),
-            (3,  9,  False),
+            (1,  1,  True),   
+            (2,  5,  True),
+            (3,  9,  True),
             (4,  2,  True),
-            (5,  6,  False),
-            (6,  10, False),
-            (7,  3,  True),
-            (8,  7,  True),
+            (5,  6,  True),
+            (6,  10, True),
+            (7,  3,  False),  
+            (8,  7,  False),
             (9,  11, False),
-            (10, 4,  True),
-            (11, 8,  True),
-            (12, 12, True),
+            (10, 4,  False),
+            (11, 8,  False),
+            (12, 12, False),
         ]
 
         # Build per-output-byte map: output_byte -> (input_byte, delayed)
@@ -769,7 +784,7 @@ class AudioCD:
         cd = AudioCD(Fs,1,8)
         cd.writeCd(audiofile)
         T_scratch = 600000 # Scratch at a diameter of approx. 66 mm
-        l_scratch = 3000
+        l_scratch = 10000
         for i  in range(math.floor((cd.cd_bits).size/T_scratch)):
             cd.scratchCd(l_scratch,30000+(i)*T_scratch)
 
