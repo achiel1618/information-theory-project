@@ -799,3 +799,10 @@ class AudioCD:
         print(f'Number undetected errors: {np.sum(out[interpolation_flags==0] != cd.scaled_quantized_padded_original[interpolation_flags==0])}')
 
         pass
+
+
+
+
+# if this file is ran as main, test it
+if __name__ == "__main__":
+    AudioCD.test()
