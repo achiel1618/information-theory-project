@@ -793,7 +793,8 @@ class AudioCD:
 
     @staticmethod
     def typecast_16(xlr8_padded):
-        ylr16=xlr8_padded[::2] + (2**8)*xlr8_padded[1::2]
+        xlr8_padded = xlr8_padded.astype(np.uint16)
+        ylr16 = xlr8_padded[::2] + (2 ** 8) * xlr8_padded[1::2]
         return ylr16
 
     @staticmethod
@@ -810,7 +811,7 @@ class AudioCD:
         if not typ:
             raise ValueError("sample width {} not supported".format(depth))
 
-        data = np.fromstring(sdata, dtype=typ)
+        data = np.frombuffer(sdata, dtype=typ)
         data=data/(2**15)
         ch_1 = data[0::nch]
         ch_2 = data[1::nch]
