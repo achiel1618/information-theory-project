@@ -120,7 +120,7 @@ class AudioCD:
         # Add uniform bit errors to cd
         # Input:
         #  -p: the bit error probability, i.e., a self.cd_bits bit is flipped with probability p
-        noise = np.random.rand((self.cd_bits).shape)<p
+        noise = np.random.rand(*self.cd_bits.shape) < p
         self.cd_bits = np.bitwise_xor(self.cd_bits,noise.astype(int))
         return
 
