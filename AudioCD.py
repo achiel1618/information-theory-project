@@ -562,22 +562,56 @@ class AudioCD:
             # p in [16,27] -> p - 4   (data:   16->12, ..., 27->23)
             raw_erase = list(np.nonzero(erasure_flags_in[i*FRAME_IN:(i+1)*FRAME_IN])[0])
             erase_pos = [p if p < 12 else (p + 12 if p < 16 else p - 4) for p in raw_erase]
-
+            
+            f = len(erase_pos) #Nr of erasure flags passed from C1
             # Pass C1 erasure positions as hints to the RS decoder, tells decoder we suspect those are errors
-            try:
-                (decoded, _, err) = self.rsc2.decode(frame_rs, erase_pos=erase_pos)
-                ERR=len(err)
-                output_dec=list(decoded)
-                output_dec=output_dec[-24:]
-            except Exception as e:
-                ERR=-1
-                output_dec=frame
 
-            if ERR == -1:
-                output[(i)*24:(i+1)*24] = output_dec[:24]
-                erasure_flags_out[(i)*24:(i+1)*24] = 1
+            
+            # Step 1: "if zero or one error", do not pass any erasure positions. 
+            try:
+                (decoded_blind, _, err_blind) = self.rsc2.decode(frame_rs, erase_pos=[])
+                blind_errors = len(err_blind)
+            except Exception:
+                blind_errors = -1  # Decoder failed, meaning there are 2+ errors
+
+            if 0 <= blind_errors <= 1:
+                # "then modify at most one symbol accordingly"
+                output[i*FRAME_OUT:(i+1)*FRAME_OUT] = list(decoded_blind)[-24:]
+                # erasure_flags_out remains 0
+                
             else:
-                output[(i)*24:(i+1)*24] = output_dec
+                # Step 2
+
+                if f > 2:
+                    # "if f > 2 then copy C2 erasure flags from C1 erasure flags"
+                    output[i*FRAME_OUT:(i+1)*FRAME_OUT] = frame_rs[:24]
+                    
+                    pos_arr = np.array(erase_pos)
+                    data_erasures = pos_arr[pos_arr < 24]
+                    erasure_flags_out[i * FRAME_OUT + data_erasures] = 1
+                    
+                elif f == 2:
+                    # "elseif f = 2 and error correction successful"
+                    # Now we try decoding WITH the erasure hints
+                    try:
+                        (decoded_hints, _, err_hints) = self.rsc2.decode(frame_rs, erase_pos=erase_pos)
+                        
+                        # "then modify the symbols accordingly"
+                        output[i*FRAME_OUT:(i+1)*FRAME_OUT] = list(decoded_hints)[-24:]
+                        # erasure_flags_out remains 0
+                        
+                    except Exception:
+                        # Correction failed
+                        # "else assign erasure flags to all symbols of the received word"
+                        output[i*FRAME_OUT:(i+1)*FRAME_OUT] = frame_rs[:24]
+                        erasure_flags_out[i*FRAME_OUT:(i+1)*FRAME_OUT] = 1
+                        
+                else:
+                    # "else assign erasure flags to all symbols of the received word"
+                    output[i*FRAME_OUT:(i+1)*FRAME_OUT] = frame_rs[:24]
+                    erasure_flags_out[i*FRAME_OUT:(i+1)*FRAME_OUT] = 1
+
+            
 
         assert len(np.shape(output))==1 and type(output) is np.ndarray, 'output must be a 1D numpy array'
         assert len(np.shape(erasure_flags_out))==1 and type(erasure_flags_out) is np.ndarray, 'erasure_flags_out must be a 1D numpy array'
