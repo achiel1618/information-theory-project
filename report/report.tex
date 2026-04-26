@@ -38,13 +38,6 @@
 
 \section{Task Division}
 % Describe how you divided the tasks among group members and who did what.
-Goal for 8 april:
-\begin{itemize}
-    \item Mendel: 5.3 encoding functions
-    \item Achiel: 5.2 write the code \& answer questions
-    \item Louis: 5.3 questions + 5.1 questions
-    \item Bram: 5.3 decoding functions
-\end{itemize}
 
 \begin{table}[H]
 \centering
@@ -248,6 +241,25 @@ Because the sample frequency is 44.1 kHz the error of 8 samples only has a durat
 
 \subsubsection{Scratch Errors}
 % Q5a: Scratches of 100, 3000, and 10000 databits wide, period 600000 bits.
+
+The performance of the four configurations was evaluated for periodic scratches of length 100, 3000 and 10000 databits, repeated every 600000 bits. Table~\ref{tab:scratch_errors} shows the probability that an audio sample was flagged as an erasure before interpolation.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{c|c|c|c|c}
+Scratch length & Config 0 & Config 1 & Config 2 & Config 3 \\
+(bits) & $P_{\text{erase}}$ & $P_{\text{erase}}$ & $P_{\text{erase}}$ & $P_{\text{erase}}$ \\
+\hline
+100   & 0 & 0 & $5.04 \cdot 10^{-4}$ & $4.32 \cdot 10^{-4}$ \\
+3000  & 0 & $6.77 \cdot 10^{-3}$ & $6.33 \cdot 10^{-4}$ & $6.19 \cdot 10^{-4}$ \\
+10000 & 0 & $1.87 \cdot 10^{-2}$ & $6.33 \cdot 10^{-4}$ & $6.19 \cdot 10^{-4}$ \\
+\end{tabular}
+\caption{Probability that a sample is flagged as an erasure before interpolation}
+\label{tab:scratch_errors}
+\end{table}
+
+Configuration 0 performs no error detection or correction and therefore produces no erasure flags, although errors remain present in the reconstructed signal. Configuration 1 (full CIRC) shows an increasing erasure probability for larger scratches, but no interpolation failures occur, indicating that the interleaving spreads burst errors over multiple codewords and allows successful correction. Configurations 2 and 3 do not use interleaving and therefore perform worse for burst errors; their erasure probability remains approximately constant for larger scratch lengths since the burst errors affect multiple symbols within the same codeword. These results confirm that interleaving in the CIRC structure significantly improves robustness against scratches.
+
 
 \subsubsection{Random Bit Errors}
 % Q5b: Bit error probability p between 0.05 and 0.001. Plot erasure probability and failed interpolation probability for configs 1, 2, and 3.
