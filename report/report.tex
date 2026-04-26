@@ -56,7 +56,7 @@
 \section{Audio CD Subcode}
 
 \subsection{Subcode Datarate}
-The datarate of the subcode in subcode block/s is 75 Hz. A subcoding block should consists of 98 subcoding symbols which each have a size of 8 bits, but the first 2 subcoding symbols are replaced by the subcoding sync patterns S0 and S1. This means the subcode has a datarate of 59600 bits/s (75 * 96 * 8). (BS\_Standard 17.3)
+The datarate of the subcode in subcode block/s is 75 Hz. A subcoding block should consists of 98 subcoding symbols which each have a size of 8 bits, but the first 2 subcoding symbols are replaced by the subcoding sync patterns S0 and S1. This means the subcode has a datarate of 57600 bits/s (75 * 96 * 8). (BS\_Standard 17.3)
 
 \subsection{P Channel Flag Bit}
 % Q2: Complete Figure 3 with the state of the channel P flag bit.
@@ -258,7 +258,7 @@ Scratch length & Config 0 & Config 1 & Config 2 & Config 3 \\
 \label{tab:scratch_errors}
 \end{table}
 
-Configuration 0 performs no error detection or correction and therefore produces no erasure flags, although errors remain present in the reconstructed signal. Configuration 1 (full CIRC) shows an increasing erasure probability for larger scratches, but no interpolation failures occur, indicating that the interleaving spreads burst errors over multiple codewords and allows successful correction. Configurations 2 and 3 do not use interleaving and therefore perform worse for burst errors; their erasure probability remains approximately constant for larger scratch lengths since the burst errors affect multiple symbols within the same codeword. These results confirm that interleaving in the CIRC structure significantly improves robustness against scratches.
+Configuration 0 performs no error detection or correction and therefore produces no erasure flags, although errors remain present in the reconstructed signal. Configuration 1 (full CIRC) shows an increasing erasure probability for larger scratches, but no interpolation failures occur. Only configuration 2 shows a small interpolation failure probability ($1.44 \cdot 10^{-4}$) for the 100-bit scratch. This indicates that the interleaving spreads burst errors over multiple codewords and allows successful correction. Configurations 2 and 3 do not use interleaving and therefore perform worse for burst errors; their erasure probability remains approximately constant for larger scratch lengths since the burst errors affect multiple symbols within the same codeword. These results confirm that interleaving in the CIRC structure significantly improves robustness against burst errors such as scratches.
 
 
 \subsubsection{Random Bit Errors}
