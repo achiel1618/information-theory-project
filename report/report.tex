@@ -76,34 +76,143 @@ Goal for 8 april:
 
 \subsection{Encoding}
 
-\subsubsection{Primitive Polynomial}
+\subsubsection{Primitive polynomial}
 % Q1a: Show that p(D) = D^8 + D^4 + D^3 + D^2 + 1 is a primitive polynomial with root alpha for GF(2^8).
 
-\subsubsection{Generator Polynomial}
+We need two things: $p(D) = D^8 + D^4 + D^3 + D^2 + 1$ must be irreducible over $\text{GF}(2)$, and its root $\alpha$ must have multiplicative order $2^8 - 1 = 255$.
+
+\paragraph{Irreducibility.}
+$p(D)$ has no roots in $\text{GF}(2)$: $p(0) = 1 \neq 0$ and $p(1) = 1+1+1+1+1 = 1 \neq 0$ (mod 2).
+Since $\deg p = 8$, any factorisation would include a factor of degree $\leq 4$. Checking division by all irreducible polynomials of degree 2, 3, and 4 over $\text{GF}(2)$ yields a nonzero remainder in every case, so $p(D)$ is irreducible.
+
+\paragraph{Primitivity.}
+Let $\alpha$ be a root of $p(D)$, giving us the reduction rule $\alpha^8 = \alpha^4 + \alpha^3 + \alpha^2 + 1$.
+Since $255 = 3 \times 5 \times 17$, it suffices to check that $\alpha^d \neq 1$ for $d \in \{85, 51, 15\}$. Computing powers via repeated multiplication and reduction:
+\begin{align*}
+\alpha^{15} &= \alpha^5 + \alpha^2 + \alpha = 38 \neq 1,\\
+\alpha^{51} &= 10 \neq 1,\\
+\alpha^{85} &= 214 \neq 1.
+\end{align*}
+Meanwhile $\alpha^{255} = 1$ because $|\text{GF}(2^8)^*| = 255$. So the order of $\alpha$ is exactly 255, and $p(D)$ is primitive.
+
+\subsubsection{Generator polynomial}
 % Q1b: Construct g(x) for the C1 RS code. Give coefficients g_i in GF(2^8). What is m_0?
 
-\subsubsection{Check Polynomial}
+The $C_1$ code is RS(32,28) over $\text{GF}(2^8)$ with $t = 2$ (IEC~60908, Section~16.3). From the parity check matrix $H_p$ in Figure~11 of the standard and the course notes (slide~145), $m_0 = 1$, so the generator polynomial has roots $\alpha, \alpha^2, \alpha^3, \alpha^4$:
+\[
+g(x) = (x + \alpha)(x + \alpha^2)(x + \alpha^3)(x + \alpha^4)
+\]
+(using $-1 = 1$ in characteristic 2). Expanding in pairs:
+\begin{align*}
+(x+\alpha)(x+\alpha^2) &= x^2 + (\alpha+\alpha^2)x + \alpha^3, \\
+(x+\alpha^3)(x+\alpha^4) &= x^2 + (\alpha^3+\alpha^4)x + \alpha^7,
+\end{align*}
+and multiplying these two quadratics:
+\begin{align*}
+g(x) &= x^4 + (\alpha+\alpha^2+\alpha^3+\alpha^4)\,x^3
++ (\alpha^3+\alpha^4+\alpha^6+\alpha^7)\,x^2 \\
+&\quad + (1+\alpha+\alpha^2+\alpha^5+\alpha^6+\alpha^7)\,x
++ (\alpha^2+\alpha^4+\alpha^5+\alpha^6).
+\end{align*}
+
+Writing $g(x) = g_0 + g_1 x + g_2 x^2 + g_3 x^3 + g_4 x^4$, the coefficients are:
+
+\begin{table}[H]
+\centering
+\begin{tabular}{ccc}
+\toprule
+ & Polynomial form & Power form \\
+\midrule
+$g_0$ & $\alpha^2+\alpha^4+\alpha^5+\alpha^6$ & $\alpha^{10}$ \\
+$g_1$ & $1+\alpha+\alpha^2+\alpha^5+\alpha^6+\alpha^7$ & $\alpha^{81}$ \\
+$g_2$ & $\alpha^3+\alpha^4+\alpha^6+\alpha^7$ & $\alpha^{251}$ \\
+$g_3$ & $\alpha+\alpha^2+\alpha^3+\alpha^4$ & $\alpha^{76}$ \\
+$g_4$ & $1$ & $\alpha^0$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsubsection{Check polynomial}
 % Q1c: Give the check polynomial h(x). First and last 5 terms sufficient.
 
-\subsubsection{Minimum Hamming Distance}
+For the full RS(255,251) code, $x^{255} + 1 = g(x) \cdot h(x)$ (since $-1 = 1$ in characteristic~2).
+The check polynomial $h(x)$ has degree 251; its roots are all $\alpha^i$ with $i \notin \{1,2,3,4\}$, i.e.\ $\alpha^0, \alpha^5, \alpha^6, \ldots, \alpha^{254}$.
+
+Computing the division gives the first and last five terms:
+\[
+h(x) = x^{251} + \alpha^{76}x^{250} + \alpha^{165}x^{249} + \alpha^{134}x^{248} + \alpha^{147}x^{247} + \cdots + \alpha^{109}x^3 + \alpha^{145}x^2 + \alpha^{61}x + \alpha^{245}
+\]
+
+\subsubsection{Minimum Hamming distance}
 % Q1d: What is the minimal Hamming distance? Use the MDS property.
 
-\subsubsection{Reed-Solomon vs.\ Binary BCH}
+RS codes are MDS codes (maximum distance separable), meaning they meet the Singleton bound with equality:
+\[
+d_{\min} = n - k + 1 = 32 - 28 + 1 = 5
+\]
+This allows correction of $t = \lfloor(d_{\min}-1)/2\rfloor = 2$ symbol errors, or detection of up to 4.
+
+\subsubsection{Reed-Solomon vs.\ binary BCH}
 % Q1e: Why is RS more appropriate for data protection than binary BCH?
+
+RS codes over $\text{GF}(2^8)$ work on 8-bit symbols rather than individual bits. This is a better fit for CD audio for two reasons.
+
+First, burst errors within a single byte count as only one symbol error for RS. A binary BCH code would treat the same burst as up to 8 separate bit errors, requiring much higher correction capability. A burst corrupting all 8 bits of one byte costs the RS decoder just one of its $t=2$ corrections, while a binary BCH code would need $t \geq 8$.
+
+Second, audio data is stored as bytes, so RS codes in $\text{GF}(2^8)$ match the data format directly. The code rate is also better: RS needs only $2t$ parity symbols (here 4 bytes) to correct $t$ symbol errors, whereas a binary BCH code protecting against the same burst lengths would require many more parity bits.
 
 \subsubsection{Implementation of \texttt{makeGenerator()} and \texttt{encode()}}
 % Q1f: Describe your implementation.
 
+\texttt{makeGenerator(m, t, m0)} builds the generator polynomial by starting from $g(x) = 1$ and iteratively multiplying by each factor $(x - \alpha^i)$ for $i = m_0, \ldots, m_0+2t-1$, using \texttt{galois.Poly} arithmetic.
+
+\texttt{encode(msg)} performs systematic encoding row by row. For each information word $m(x)$ of length $l$:
+\begin{enumerate}
+    \item Place $m(x)$ in the high-order positions of a length-$(l + n - k)$ buffer (equivalent to multiplying by $x^{n-k}$).
+    \item Compute the remainder $r(x) = m(x) \cdot x^{n-k} \bmod g(x)$.
+    \item Output the codeword $[m(x) \mid r(x)]$: the message followed by the parity symbols.
+\end{enumerate}
+
 \subsection{Decoding}
 
-\subsubsection{Bit Error Correction Capability}
+\subsubsection{Bit error correction capability}
 % Q2a: How many erroneous bits can C1 always correct? Maximum correctable?
 
-\subsubsection{Bit Error Rate vs.\ Symbol Error Rate}
+$C_1$ corrects up to $t = 2$ symbol errors, with each symbol being 8 bits.
+
+In the worst case, each erroneous bit lands in a different symbol, so $C_1$ can always correct up to 2 erroneous bits. Three bit errors could fall in three different symbols, which exceeds $t=2$.
+
+In the best case, all bit errors are concentrated in at most 2 symbols. Then up to $2 \times 8 = 16$ erroneous bits can be corrected, since the RS decoder only sees 2 corrupted symbols.
+
+\subsubsection{Bit error rate vs.\ symbol error rate}
 % Q2b: Relationship between P_b and P_s for GF(2^8).
+
+With independent bit errors at probability $P_b$, a symbol of $m = 8$ bits is erroneous whenever at least one bit is wrong:
+\[
+P_s = 1 - (1 - P_b)^8
+\]
+For small $P_b$ this simplifies to $P_s \approx 8\, P_b$.
 
 \subsubsection{Implementation of \texttt{decode()}}
 % Q2c: Describe your decoding algorithm.
+
+The decoder implements the PGZ (Peterson-Gorenstein-Zierler) algorithm with Forney's formula. For each received word $r(x)$:
+
+\begin{enumerate}
+    \item Compute syndromes $S_j = r(\alpha^{m_0+j})$ for $j = 0, \ldots, 2t-1$. If all are zero, the word is error-free.
+
+    \item Find the error locator polynomial $\Lambda(x)$ via PGZ: try $\nu = t, t-1, \ldots, 1$ errors, building a $\nu \times \nu$ syndrome matrix each time. The first $\nu$ for which the system is solvable gives $\Lambda(x)$.
+
+    \item Chien search: evaluate $\Lambda(\alpha^{-i})$ for each position $i$ in the codeword to find the error locations. If the number of roots does not equal $\nu$, decoding fails.
+
+    \item Forney's algorithm: compute the error evaluator polynomial $\Omega(x) = S(x) \cdot \Lambda(x) \bmod x^{2t}$ and obtain the error values as
+    \[
+    e_j = \alpha^{i_j(1-m_0)} \cdot \frac{\Omega(\alpha^{-i_j})}{\Lambda'(\alpha^{-i_j})}
+    \]
+    where $\Lambda'(x)$ is the formal derivative of $\Lambda(x)$.
+
+    \item Correct the received word and verify by recomputing the syndromes. If they are not all zero, the word is flagged as uncorrectable ($\texttt{nERR} = -1$).
+\end{enumerate}
 
 \section{Audio Encoding in CDs}
 
