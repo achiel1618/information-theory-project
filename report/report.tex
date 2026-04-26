@@ -263,7 +263,15 @@ Configuration 0 performs no error detection or correction and therefore produces
 
 \subsubsection{Random Bit Errors}
 % Q5b: Bit error probability p between 0.05 and 0.001. Plot erasure probability and failed interpolation probability for configs 1, 2, and 3.
+\subsubsection{Random Bit Errors}
 
+The performance of the error-correcting configurations was evaluated against random bit errors, with bit error probabilities ($p$) ranging from 0.001 to 0.05. 
+
+As shown in Figure \ref{fig:bit_error}, Configurations 1 and 3 exhibit similar performance at low bit error rates. However, as the error rate increases, Configuration 3 begins to outperform the others. The architecture of Configuration 3,a single (32, 24) Reed-Solomon code, makes it highly resilient to random noise. 
+
+Configuration 2 (Concatenated Reed-Solomon without interleaving) demonstrates the poorest performance across both metrics. This degradation is primarily due to the absence of an interleaver. If decoding fails in the first stage, the localized error bytes are passed directly to the next decoding stage. Without interleaving to separate these bytes into multiple words, these errors remain concentrated. Consequently, subsequent audio interpolation becomes highly difficult, resulting in a high failure rate. 
+
+In contrast to Configuration 2, Configuration 1 (CIRC standard) actively interleaves the data. Therefore, if decoding fails, the resulting errors are spread across the time domain, leading to a higher decoding success rate in the subsequent block. In the graph it is clear that due to the interleaving, configuration 1 outperforms both 2 and 3 on interpolation, which results in a separation of the error bytes. This separation allows the audio interpolator to  reconstruct missing samples across small data gaps, this is not possible with the bigger gaps produced by Configuration 2 and 3.
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.8\textwidth]{bit_error_performance.png}
