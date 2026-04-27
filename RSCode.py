@@ -187,7 +187,7 @@ class RSCode:
     @staticmethod
     def test():
         # function that illustrates how the other code of this class can be tested
-        m0 = 1 # Also test with other values of m0!
+        m0 = 0 # CD standard uses m0=0 (roots alpha^0, alpha^1, alpha^2, alpha^3)
         m=8
         t=5
         l=10

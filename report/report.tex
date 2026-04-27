@@ -106,21 +106,21 @@ Meanwhile $\alpha^{255} = 1$ because $|\text{GF}(2^8)^*| = 255$. So the order of
 \subsubsection{Generator polynomial}
 % Q1b: Construct g(x) for the C1 RS code. Give coefficients g_i in GF(2^8). What is m_0?
 
-The $C_1$ code is RS(32,28) over $\text{GF}(2^8)$ with $t = 2$ (IEC~60908, Section~16.3). From the parity check matrix $H_p$ in Figure~11 of the standard and the course notes (slide~145), $m_0 = 1$, so the generator polynomial has roots $\alpha, \alpha^2, \alpha^3, \alpha^4$:
+The $C_1$ code is RS(32,28) over $\text{GF}(2^8)$ with $t = 2$ (IEC~60908, Section~16.3). From the parity check matrix $H_P$ in Figure~11 of the standard (equivalently, Annex~C of ECMA-130), the first row is all~1s (evaluating at $\alpha^0$) and subsequent rows evaluate at $\alpha^1, \alpha^2, \alpha^3$. Therefore $m_0 = 0$ and the generator polynomial has roots $\alpha^0 = 1, \alpha, \alpha^2, \alpha^3$:
 \[
-g(x) = (x + \alpha)(x + \alpha^2)(x + \alpha^3)(x + \alpha^4)
+g(x) = (x + 1)(x + \alpha)(x + \alpha^2)(x + \alpha^3)
 \]
 (using $-1 = 1$ in characteristic 2). Expanding in pairs:
 \begin{align*}
-(x+\alpha)(x+\alpha^2) &= x^2 + (\alpha+\alpha^2)x + \alpha^3, \\
-(x+\alpha^3)(x+\alpha^4) &= x^2 + (\alpha^3+\alpha^4)x + \alpha^7,
+(x+1)(x+\alpha) &= x^2 + (1+\alpha)x + \alpha, \\
+(x+\alpha^2)(x+\alpha^3) &= x^2 + (\alpha^2+\alpha^3)x + \alpha^5,
 \end{align*}
 and multiplying these two quadratics:
 \begin{align*}
-g(x) &= x^4 + (\alpha+\alpha^2+\alpha^3+\alpha^4)\,x^3
-+ (\alpha^3+\alpha^4+\alpha^6+\alpha^7)\,x^2 \\
-&\quad + (1+\alpha+\alpha^2+\alpha^5+\alpha^6+\alpha^7)\,x
-+ (\alpha^2+\alpha^4+\alpha^5+\alpha^6).
+g(x) &= x^4 + (1+\alpha+\alpha^2+\alpha^3)\,x^3
++ (\alpha+\alpha^2+\alpha^4+\alpha^5)\,x^2 \\
+&\quad + (\alpha^3+\alpha^4+\alpha^5+\alpha^6)\,x
++ \alpha^6.
 \end{align*}
 
 Writing $g(x) = g_0 + g_1 x + g_2 x^2 + g_3 x^3 + g_4 x^4$, the coefficients are:
@@ -131,10 +131,10 @@ Writing $g(x) = g_0 + g_1 x + g_2 x^2 + g_3 x^3 + g_4 x^4$, the coefficients are
 \toprule
  & Polynomial form & Power form \\
 \midrule
-$g_0$ & $\alpha^2+\alpha^4+\alpha^5+\alpha^6$ & $\alpha^{10}$ \\
-$g_1$ & $1+\alpha+\alpha^2+\alpha^5+\alpha^6+\alpha^7$ & $\alpha^{81}$ \\
-$g_2$ & $\alpha^3+\alpha^4+\alpha^6+\alpha^7$ & $\alpha^{251}$ \\
-$g_3$ & $\alpha+\alpha^2+\alpha^3+\alpha^4$ & $\alpha^{76}$ \\
+$g_0$ & $\alpha^6$ & $\alpha^{6}$ \\
+$g_1$ & $\alpha^3+\alpha^4+\alpha^5+\alpha^6$ & $\alpha^{78}$ \\
+$g_2$ & $\alpha+\alpha^2+\alpha^4+\alpha^5$ & $\alpha^{249}$ \\
+$g_3$ & $1+\alpha+\alpha^2+\alpha^3$ & $\alpha^{75}$ \\
 $g_4$ & $1$ & $\alpha^0$ \\
 \bottomrule
 \end{tabular}
@@ -144,11 +144,11 @@ $g_4$ & $1$ & $\alpha^0$ \\
 % Q1c: Give the check polynomial h(x). First and last 5 terms sufficient.
 
 For the full RS(255,251) code, $x^{255} + 1 = g(x) \cdot h(x)$ (since $-1 = 1$ in characteristic~2).
-The check polynomial $h(x)$ has degree 251; its roots are all $\alpha^i$ with $i \notin \{1,2,3,4\}$, i.e.\ $\alpha^0, \alpha^5, \alpha^6, \ldots, \alpha^{254}$.
+The check polynomial $h(x)$ has degree 251; its roots are all $\alpha^i$ with $i \notin \{0,1,2,3\}$, i.e.\ $\alpha^4, \alpha^5, \alpha^6, \ldots, \alpha^{254}$.
 
 Computing the division gives the first and last five terms:
 \[
-h(x) = x^{251} + \alpha^{76}x^{250} + \alpha^{165}x^{249} + \alpha^{134}x^{248} + \alpha^{147}x^{247} + \cdots + \alpha^{109}x^3 + \alpha^{145}x^2 + \alpha^{61}x + \alpha^{245}
+h(x) = x^{251} + \alpha^{75}x^{250} + \alpha^{163}x^{249} + \alpha^{131}x^{248} + \alpha^{143}x^{247} + \cdots + \alpha^{116}x^3 + \alpha^{151}x^2 + \alpha^{66}x + \alpha^{249}
 \]
 
 \subsubsection{Minimum Hamming distance}
