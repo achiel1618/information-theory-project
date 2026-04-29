@@ -479,11 +479,10 @@ class AudioCD:
 
             except Exception as e:
                 n_errors = -1
-                output_dec = list(frame[:FRAME_OUT])
 
-            if n_errors == -1:
+            if n_errors == -1 or n_errors > 1:
                  # 2+ errors: can't correct reliably, flag entire frame as erasure
-                output[i*FRAME_OUT:(i+1)*FRAME_OUT] = output_dec
+                output[i*FRAME_OUT:(i+1)*FRAME_OUT] = list(frame[:FRAME_OUT])
                 erasure_flags_out[i*FRAME_OUT:(i+1)*FRAME_OUT] = 1
             else:
                 # 0 or 1 error: correction succeeded, no flags
