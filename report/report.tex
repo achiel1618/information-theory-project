@@ -260,17 +260,23 @@ Scratch length & Config 0 & Config 1 & Config 2 & Config 3 \\
 Configuration 0 performs no error detection or correction and therefore produces no erasure flags, although errors remain present in the reconstructed signal. Configuration 1 (full CIRC) shows an increasing erasure probability for larger scratches, but no interpolation failures occur. Only configuration 2 shows a small interpolation failure probability ($1.44 \cdot 10^{-4}$) for the 100-bit scratch. This indicates that the interleaving spreads burst errors over multiple codewords and allows successful correction. Configurations 2 and 3 do not use interleaving and therefore perform worse for burst errors; their erasure probability remains approximately constant for larger scratch lengths since the burst errors affect multiple symbols within the same codeword. These results confirm that interleaving in the CIRC structure significantly improves robustness against burst errors such as scratches.
 
 
-\subsubsection{Random Bit Errors}
 % Q5b: Bit error probability p between 0.05 and 0.001. Plot erasure probability and failed interpolation probability for configs 1, 2, and 3.
 \subsubsection{Random Bit Errors}
 
-The performance of the error-correcting configurations was evaluated against random bit errors, with bit error probabilities ($p$) ranging from 0.001 to 0.05. 
+The findings of Figure~\ref{fig:bit_error} are discussed in this section. 
 
-As shown in Figure \ref{fig:bit_error}, Configurations 1 and 3 exhibit similar performance at low bit error rates. However, as the error rate increases, Configuration 3 begins to outperform the others. The architecture of Configuration 3,a single (32, 24) Reed-Solomon code, makes it highly resilient to random noise. 
+\textbf{Configuration 1 (Full CIRC):} \\
+In this configuration, we observe a big difference in the ($P(\text{erasure}) = 0.6602$) and the probability of an interpolation failure ($P(\text{interpolation failed}) = 0.0914$ at $p=0.00569$) for the same bit error probability. This performance is directly attributable to the data interleaving process. The $C_1$ decoder can correct up to 2 symbol errors per codeword; if it fails, the uncorrected errors are dispersed before reaching the $C_2$ decoder. Consequently, for a final block to fail, multiple separate $C_1$ blocks must fail simultaneously. When decoding does ultimately fail, the interleaving ensures that the resulting uncorrectable symbols (erasures) are spread out across the time domain. This dispersion allows the audio interpolator to easily reconstruct missing samples across small, isolated data gaps.
 
-Configuration 2 (Concatenated Reed-Solomon without interleaving) demonstrates the poorest performance across both metrics. This degradation is primarily due to the absence of an interleaver. If decoding fails in the first stage, the localized error bytes are passed directly to the next decoding stage. Without interleaving to separate these bytes into multiple words, these errors remain concentrated. Consequently, subsequent audio interpolation becomes highly difficult, resulting in a high failure rate. 
+\textbf{Configuration 2 (No Interleaving):} \\
+Without interleaving, the error correction capability is severely bottlenecked. If the $C_1$ decoder is overwhelmed by a burst error and fails, the $C_2$ decoder will inevitably fail as well, effectively limiting the system to the strength of the first decoder alone. Furthermore, because the data is not dispersed, uncorrectable errors remain grouped together in the time domain. These large, contiguous gaps of missing data cannot be successfully concealed by the audio interpolator, leading to a high rate of interpolation failure.
 
-In contrast to Configuration 2, Configuration 1 (CIRC standard) actively interleaves the data. Therefore, if decoding fails, the resulting errors are spread across the time domain, leading to a higher decoding success rate in the subsequent block. In the graph it is clear that due to the interleaving, configuration 1 outperforms both 2 and 3 on interpolation, which results in a separation of the error bytes. This separation allows the audio interpolator to  reconstruct missing samples across small data gaps, this is not possible with the bigger gaps produced by Configuration 2 and 3.
+\textbf{Configuration 3:} \\
+This configuration exhibits the highest error correction capacity for uncorrelated errors, capable of simultaneously correcting up to 4 symbol errors per block. The data clearly shows that this code is mathematically the most robust against purely random noise. Similar to Configuration 2, however, there is only a marginal difference between the erasure probability and the interpolation failure probability, indicating that when the decoder does fail, the audio cannot be easily salvaged through interpolation.
+
+\textbf{Conclusion:} \\
+Overall, while Configuration 3 performs the best under random noise conditions, it is largely impractical for physical optical media like CDs, which are predominantly susceptible to burst errors caused by scratches or dust. Configuration 2 consistently performs the worst across all metrics due to its lack of interleaving. For low bit-error probabilities, the interleaving between the $C_1$ and $C_2$ decoders of configuration 1 allows it to vastly outperform Configuration 2. Most importantly, Configuration 1 boasts the lowest interpolation failure rate relative to its erasure probability.
+
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.8\textwidth]{bit_error_performance.png}
