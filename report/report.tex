@@ -225,7 +225,7 @@ The operations in the decoder reverse these operations. C1 code is designed to c
 
 \subsection{Implementation of AudioCD Functions}
 % Q2: Describe your implementation of the AudioCD class functions.
-[GenAI answer] The AudioCD class implements the CIRC encoding and decoding pipeline as described. The \texttt{encode()} method applies the sequence of delays, interleaving, C1 and C2 encoding. The \texttt{decode()} method reverses the process, including error correction and interpolation for uncorrectable errors.
+The AudioCD class implements the CIRC encoding and decoding pipeline, the architecture is based on the CIRC decoder specifications outlined in the IEC 60908:1999 International Standard \cite[pp.~155, 157]{iec60908_1999}. The \texttt{encode()} method applies the sequence of delays, C2 encoder, delays and C1 encoder. The \texttt{decode()} method reverses the process, including error correction and interpolation for uncorrectable errors.
 
 \subsection{Maximum Correctable Burst}
 % Q3: Maximum burst duration (bits) assuming C2 corrects 4 erasures. Translate to scratch width at 1.3 m/s. Compare with simulation results.
@@ -285,3 +285,13 @@ EFM stands for eight-to-fourteen modulation and translates blocks of 8 databits 
 As said the 14-bit patterns have 16384 possible combinations but only 256 of them are valid codewords. If the EFM demodulator receives one of the illegal patterns it can signal to the CIRC an error has occurred and because the CIRC now knows the location of the error it will have to spend less time correcting the error. (Ken C. p79-80)
 
 \end{document}
+
+
+\begin{thebibliography}{9}
+
+\bibitem{iec60908_1999}
+International Electrotechnical Commission. 
+\textit{Audio recording - Compact disc digital audio system}. 
+Standard IEC 60908:1999, Geneva, Switzerland, Feb. 1999.
+
+\end{thebibliography}
