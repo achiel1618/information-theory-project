@@ -241,23 +241,43 @@ Because the sample frequency is 44.1 kHz the error of 8 samples only has a durat
 \subsubsection{Scratch Errors}
 % Q5a: Scratches of 100, 3000, and 10000 databits wide, period 600000 bits.
 
-The performance of the four configurations was evaluated for periodic scratches of length 100, 3000 and 10000 databits, repeated every 600000 bits. Table~\ref{tab:scratch_errors} shows the probability that an audio sample was flagged as an erasure before interpolation.
+In this test, periodic scratches of 100, 3000 and 10000 databits were added with a period of 600000 bits. Configuration 1 uses the full CIRC structure with interleaving, configuration 2 uses the two Reed--Solomon codes without interleaving, and configuration 3 uses one single $(32,24)$ Reed--Solomon code. Configuration 0 is not included, since it does not perform error detection or correction and therefore cannot produce meaningful erasure flags.
+
+The erasure probability counts samples that are still flagged as unreliable after the Reed--Solomon decoding stages, but before interpolation. Errors that are already corrected by the decoders are therefore not counted as erasures. The failed interpolation probability counts the samples that could not be masked by the interpolator.
 
 \begin{table}[H]
 \centering
-\begin{tabular}{c|c|c|c|c}
-Scratch length & Config 0 & Config 1 & Config 2 & Config 3 \\
-(bits) & $P_{\text{erase}}$ & $P_{\text{erase}}$ & $P_{\text{erase}}$ & $P_{\text{erase}}$ \\
+\begin{tabular}{c|c|c|c}
 \hline
-100   & 0 & 0 & $5.04 \cdot 10^{-4}$ & $4.32 \cdot 10^{-4}$ \\
-3000  & 0 & $6.77 \cdot 10^{-3}$ & $6.33 \cdot 10^{-4}$ & $6.19 \cdot 10^{-4}$ \\
-10000 & 0 & $1.87 \cdot 10^{-2}$ & $6.33 \cdot 10^{-4}$ & $6.19 \cdot 10^{-4}$ \\
+Scratch length & Config. 1 & Config. 2 & Config. 3 \\
+\hline
+100 bits   & $0$ & $6.47\cdot 10^{-4}$ & $4.32\cdot 10^{-4}$ \\
+3000 bits  & $0$ & $8.63\cdot 10^{-4}$ & $6.19\cdot 10^{-4}$ \\
+10000 bits & $1.76\cdot 10^{-2}$ & $7.48\cdot 10^{-4}$ & $6.19\cdot 10^{-4}$ \\
+\hline
 \end{tabular}
-\caption{Probability that a sample is flagged as an erasure before interpolation}
-\label{tab:scratch_errors}
+\caption{Probability that an audio sample is flagged as an erasure after decoding.}
+\label{tab:scratch_erasure}
 \end{table}
 
-Configuration 0 performs no error detection or correction and therefore produces no erasure flags, although errors remain present in the reconstructed signal. Configuration 1 (full CIRC) shows an increasing erasure probability for larger scratches, but no interpolation failures occur. Only configuration 2 shows a small interpolation failure probability ($1.44 \cdot 10^{-4}$) for the 100-bit scratch. This indicates that the interleaving spreads burst errors over multiple codewords and allows successful correction. Configurations 2 and 3 do not use interleaving and therefore perform worse for burst errors; their erasure probability remains approximately constant for larger scratch lengths since the burst errors affect multiple symbols within the same codeword. These results confirm that interleaving in the CIRC structure significantly improves robustness against burst errors such as scratches.
+\begin{table}[H]
+\centering
+\begin{tabular}{c|c|c|c}
+\hline
+Scratch length & Config. 1 & Config. 2 & Config. 3 \\
+\hline
+100 bits   & $0$ & $4.32\cdot 10^{-4}$ & $0$ \\
+3000 bits  & $0$ & $0$ & $0$ \\
+10000 bits & $0$ & $0$ & $0$ \\
+\hline
+\end{tabular}
+\caption{Probability that an audio sample could not be interpolated.}
+\label{tab:scratch_interpolation}
+\end{table}
+
+Configuration 1 gives no erasure flags for the 100 and 3000 bit scratches. This is consistent with the purpose of the CIRC interleaving: the burst error is spread over multiple Reed--Solomon codewords, so the individual codewords can still be corrected. For the 10000 bit scratch, erasures remain after decoding, but they are still short enough to be handled by interpolation.
+
+Configurations 2 and 3 do not use the same cross-interleaving, so burst errors remain more concentrated in the affected codewords. They therefore produce erasure flags even for the shorter scratches. Configuration 3 gives no failed interpolations in this test, while configuration 2 has a small interpolation failure probability for the 100 bit scratch. Overall, the results show that the CIRC interleaving in configuration 1 is especially effective for the shorter burst errors, and that the remaining erasures in these tests can usually be masked by interpolation.
 
 
 % Q5b: Bit error probability p between 0.05 and 0.001. Plot erasure probability and failed interpolation probability for configs 1, 2, and 3.
