@@ -38,13 +38,6 @@
 
 \section{Task Division}
 % Describe how you divided the tasks among group members and who did what.
-Goal for 8 april:
-\begin{itemize}
-    \item Mendel: 5.3 encoding functions
-    \item Achiel: 5.2 write the code \& answer questions
-    \item Louis: 5.3 questions + 5.1 questions
-    \item Bram: 5.3 decoding functions
-\end{itemize}
 
 \begin{table}[H]
 \centering
@@ -63,7 +56,7 @@ Goal for 8 april:
 \section{Audio CD Subcode}
 
 \subsection{Subcode Datarate}
-The datarate of the subcode in subcode block/s is 75 Hz. A subcoding block should consists of 98 subcoding symbols which each have a size of 8 bits, but the first 2 subcoding symbols are replaced by the subcoding sync patterns S0 and S1. This means the subcode has a datarate of 59600 bits/s (75 * 96 * 8). (BS\_Standard 17.3)
+The datarate of the subcode in subcode block/s is 75 Hz. A subcoding block should consists of 98 subcoding symbols which each have a size of 8 bits, but the first 2 subcoding symbols are replaced by the subcoding sync patterns S0 and S1. This means the subcode has a datarate of 57600 bits/s (75 * 96 * 8). (BS\_Standard 17.3)
 
 \subsection{P Channel Flag Bit}
 % Q2: Complete Figure 3 with the state of the channel P flag bit.
@@ -235,12 +228,11 @@ The operations in the decoder reverse these operations. C1 code is designed to c
 
 \subsection{Implementation of AudioCD Functions}
 % Q2: Describe your implementation of the AudioCD class functions.
-[GenAI answer] The AudioCD class implements the CIRC encoding and decoding pipeline as described. The \texttt{encode()} method applies the sequence of delays, interleaving, C1 and C2 encoding. The \texttt{decode()} method reverses the process, including error correction and interpolation for uncorrectable errors.
+The AudioCD class implements the CIRC encoding and decoding pipeline, the architecture is based on the CIRC decoder specifications outlined in the IEC 60908:1999 International Standard \cite[pp.~155, 157]{iec60908_1999}. The \texttt{encode()} method applies the sequence of delays, C2 encoder, delays and C1 encoder. The \texttt{decode()} method reverses the process, including error correction and interpolation for uncorrectable errors.
 
 \subsection{Maximum Correctable Burst}
 % Q3: Maximum burst duration (bits) assuming C2 corrects 4 erasures. Translate to scratch width at 1.3 m/s. Compare with simulation results.
-The C2 decoder can correct up to 4 erasures. This means that to have an uncorrectable error with minimum distance, the burst should span 5 symbols long when it arrives at the C2 decoder. Since the encoder displaces symbols with 4 blocks after C2 encoding, a burst of 17 blocks would affect 5 symbols but a burst of 16 blocks would only affect 4 symbols. So a burst of 16 blocks can always be corrected by the C2 decoder. Blocks after encoding contain 32 symbols of 8 bits. This means that the maximum duration of a burst can be 16 blocks x 32 symbols/block x 8 bits/symbol, which is 4096 bits. 1 Frame/block contains 6 stereo samples and because the audio sample rate is 44100 samples/s this means the frame rate is 7350 frames/s. This means the maximum duration a burst can occur is 16 frames / 7350 frames/s, which is 0.00218 seconds. Because the scanning velocity of the laser is 1.3 m/s, this means the maximum width of a scratch is 1.3m/s * 0.00218 s, which is 0.00283 meter or 2.83 millimeter.
-
+The C2 decoder can correct up to 4 erasures. This means that to have an uncorrectable error with minimum distance, the burst should span 5 symbols long when it arrives at the C2 decoder. Since the encoder displaces symbols with 4 blocks after C2 encoding, a burst of 17 blocks would affect 5 symbols but a burst of 16 blocks would only affect 4 symbols. So a burst of 16 blocks can always be corrected by the C2 decoder. Blocks after encoding contain 32 symbols of 8 bits. This means that the maximum duration of a burst can be 16 blocks x 32 symbols/block x 8 bits/symbol, which is 4096 bits. 1 Frame/block contains 6 stereo samples and because the audio sample rate is 44100 samples/s this means the frame rate is 7350 frames/s. This means the maximum duration a burst can occur is 16 frames / 7350 frames/s, which is 0.00218 seconds. Because the scanning velocity of the laser is 1.3 m/s, this means the maximum width of a scratch is 1.3m/s * 0.00218 s, which is 0.00283 meter or 2.83 millimeter. While 4096 bits is the theoretical maximum burst duration that can be corrected, the simulation isn't guaranteed to have erros for a burst slightly longer than 4096 bits. In the simulation, undetectable errors started to occur for scratch lengths a few hundred bits longer than the theoretical allowed maximum. 
 \subsection{Linear Interpolation}
 % Q4: Describe why interpolation of max 8 subsequent samples works. Relation with sample frequency.
 The interpolator works because in the real world sound-waves are also smooth. A soundwave can't jump from one position to another. If you use linear interpolation to draw a line between the safe samples, this will also result in a smooth curve which is a lot better than abruptly stopping the wave.
@@ -252,8 +244,61 @@ Because the sample frequency is 44.1 kHz the error of 8 samples only has a durat
 \subsubsection{Scratch Errors}
 % Q5a: Scratches of 100, 3000, and 10000 databits wide, period 600000 bits.
 
-\subsubsection{Random Bit Errors}
+In this test, periodic scratches of 100, 3000 and 10000 databits were added with a period of 600000 bits. Configuration 1 uses the full CIRC structure with interleaving, configuration 2 uses the two Reed--Solomon codes without interleaving, and configuration 3 uses one single $(32,24)$ Reed--Solomon code. Configuration 0 is not included, since it does not perform error detection or correction and therefore cannot produce meaningful erasure flags.
+
+The erasure probability counts samples that are still flagged as unreliable after the Reed--Solomon decoding stages, but before interpolation. Errors that are already corrected by the decoders are therefore not counted as erasures. The failed interpolation probability counts the samples that could not be masked by the interpolator.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{c|c|c|c}
+\hline
+Scratch length & Config. 1 & Config. 2 & Config. 3 \\
+\hline
+100 bits   & $0$ & $6.47\cdot 10^{-4}$ & $4.32\cdot 10^{-4}$ \\
+3000 bits  & $0$ & $8.63\cdot 10^{-4}$ & $6.19\cdot 10^{-4}$ \\
+10000 bits & $1.76\cdot 10^{-2}$ & $7.48\cdot 10^{-4}$ & $6.19\cdot 10^{-4}$ \\
+\hline
+\end{tabular}
+\caption{Probability that an audio sample is flagged as an erasure after decoding.}
+\label{tab:scratch_erasure}
+\end{table}
+
+\begin{table}[H]
+\centering
+\begin{tabular}{c|c|c|c}
+\hline
+Scratch length & Config. 1 & Config. 2 & Config. 3 \\
+\hline
+100 bits   & $0$ & $4.32\cdot 10^{-4}$ & $0$ \\
+3000 bits  & $0$ & $0$ & $0$ \\
+10000 bits & $0$ & $0$ & $0$ \\
+\hline
+\end{tabular}
+\caption{Probability that an audio sample could not be interpolated.}
+\label{tab:scratch_interpolation}
+\end{table}
+
+Configuration 1 gives no erasure flags for the 100 and 3000 bit scratches. This is consistent with the purpose of the CIRC interleaving: the burst error is spread over multiple Reed--Solomon codewords, so the individual codewords can still be corrected. For the 10000 bit scratch, erasures remain after decoding, but they are still short enough to be handled by interpolation.
+
+Configurations 2 and 3 do not use the same cross-interleaving, so burst errors remain more concentrated in the affected codewords. They therefore produce erasure flags even for the shorter scratches. Configuration 3 gives no failed interpolations in this test, while configuration 2 has a small interpolation failure probability for the 100 bit scratch. Overall, the results show that the CIRC interleaving in configuration 1 is especially effective for the shorter burst errors, and that the remaining erasures in these tests can usually be masked by interpolation.
+
+
 % Q5b: Bit error probability p between 0.05 and 0.001. Plot erasure probability and failed interpolation probability for configs 1, 2, and 3.
+\subsubsection{Random Bit Errors}
+
+The findings of Figure~\ref{fig:bit_error} are discussed in this section. 
+
+\textbf{Configuration 1 (Full CIRC):} \\
+In this configuration, we observe a big difference in the ($P(\text{erasure}) = 0.6602$) and the probability of an interpolation failure ($P(\text{interpolation failed}) = 0.0914$ at $p=0.00569$) for the same bit error probability. This performance is directly attributable to the data interleaving process. The $C_1$ decoder can correct up to 2 symbol errors per codeword; if it fails, the uncorrected errors are dispersed before reaching the $C_2$ decoder. Consequently, for a final block to fail, multiple separate $C_1$ blocks must fail simultaneously. When decoding does ultimately fail, the interleaving ensures that the resulting uncorrectable symbols (erasures) are spread out across the time domain. This dispersion allows the audio interpolator to easily reconstruct missing samples across small, isolated data gaps.
+
+\textbf{Configuration 2 (No Interleaving):} \\
+Without interleaving, the error correction capability is severely bottlenecked. If the $C_1$ decoder is overwhelmed by a burst error and fails, the $C_2$ decoder will inevitably fail as well, effectively limiting the system to the strength of the first decoder alone. Furthermore, because the data is not dispersed, uncorrectable errors remain grouped together in the time domain. These large, contiguous gaps of missing data cannot be successfully concealed by the audio interpolator, leading to a high rate of interpolation failure.
+
+\textbf{Configuration 3:} \\
+This configuration exhibits the highest error correction capacity for uncorrelated errors, capable of simultaneously correcting up to 4 symbol errors per block. The data clearly shows that this code is mathematically the most robust against purely random noise. Similar to Configuration 2, however, there is only a marginal difference between the erasure probability and the interpolation failure probability, indicating that when the decoder does fail, the audio cannot be easily salvaged through interpolation.
+
+\textbf{Conclusion:} \\
+Overall, while Configuration 3 performs the best under random noise conditions, it is largely impractical for physical optical media like CDs, which are predominantly susceptible to burst errors caused by scratches or dust. Configuration 2 consistently performs the worst across all metrics due to its lack of interleaving. For low bit-error probabilities, the interleaving between the $C_1$ and $C_2$ decoders of configuration 1 allows it to vastly outperform Configuration 2. Most importantly, Configuration 1 boasts the lowest interpolation failure rate relative to its erasure probability.
 
 \begin{figure}[H]
 \centering
@@ -269,3 +314,13 @@ EFM stands for eight-to-fourteen modulation and translates blocks of 8 databits 
 As said the 14-bit patterns have 16384 possible combinations but only 256 of them are valid codewords. If the EFM demodulator receives one of the illegal patterns it can signal to the CIRC an error has occurred and because the CIRC now knows the location of the error it will have to spend less time correcting the error. (Ken C. p79-80)
 
 \end{document}
+
+
+\begin{thebibliography}{9}
+
+\bibitem{iec60908_1999}
+International Electrotechnical Commission. 
+\textit{Audio recording - Compact disc digital audio system}. 
+Standard IEC 60908:1999, Geneva, Switzerland, Feb. 1999.
+
+\end{thebibliography}

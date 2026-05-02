@@ -479,11 +479,10 @@ class AudioCD:
 
             except Exception as e:
                 n_errors = -1
-                output_dec = list(frame[:FRAME_OUT])
 
-            if n_errors == -1:
+            if n_errors == -1 or n_errors > 1:
                  # 2+ errors: can't correct reliably, flag entire frame as erasure
-                output[i*FRAME_OUT:(i+1)*FRAME_OUT] = output_dec
+                output[i*FRAME_OUT:(i+1)*FRAME_OUT] = list(frame[:FRAME_OUT])
                 erasure_flags_out[i*FRAME_OUT:(i+1)*FRAME_OUT] = 1
             else:
                 # 0 or 1 error: correction succeeded, no flags
@@ -549,6 +548,7 @@ class AudioCD:
         output = np.zeros(n_frames * FRAME_OUT, dtype='B')
         erasure_flags_out = np.zeros(n_frames * FRAME_OUT)
 
+
         for i in range(n_frames):
             frame = data[i*FRAME_IN:(i+1)*FRAME_IN]
 
@@ -567,17 +567,24 @@ class AudioCD:
             # Pass C1 erasure positions as hints to the RS decoder, tells decoder we suspect those are errors
 
             
-            # Step 1: "if zero or one error", do not pass any erasure positions. 
+            # Step 1: "if zero or one pure error" 
             try:
-                (decoded_blind, _, err_blind) = self.rsc2.decode(frame_rs, erase_pos=[])
-                blind_errors = len(err_blind)
+                (decoded, _, errata_pos) = self.rsc2.decode(frame_rs, erase_pos=erase_pos)
+                decode_successful = True
+                
+                # Calculate pure errors exactly as the assignment requested
+                pure_errors = set(list(errata_pos)) - set(erase_pos)
+                number_of_detected_errors = len(pure_errors)
+                
             except Exception:
-                blind_errors = -1  # Decoder failed, meaning there are 2+ errors
+                # If decoding fails, it means there are too many errors to correct
+                decode_successful = False
+                number_of_detected_errors = 999  # Set artificially high so it falls into the 'else' block
 
-            if 0 <= blind_errors <= 1:
-                # "then modify at most one symbol accordingly"
-                output[i*FRAME_OUT:(i+1)*FRAME_OUT] = list(decoded_blind)[-24:]
-                # erasure_flags_out remains 0
+
+            if number_of_detected_errors <= 1 and decode_successful:
+                output[i*FRAME_OUT:(i+1)*FRAME_OUT] = list(decoded)[-24:]
+
                 
             else:
                 # Step 2
@@ -590,26 +597,19 @@ class AudioCD:
                     data_erasures = pos_arr[pos_arr < 24]
                     erasure_flags_out[i * FRAME_OUT + data_erasures] = 1
                     
-                elif f == 2:
+                elif f == 2 and decode_successful: #The case when there are just 2 erasures 
                     # "elseif f = 2 and error correction successful"
-                    # Now we try decoding WITH the erasure hints
-                    try:
-                        (decoded_hints, _, err_hints) = self.rsc2.decode(frame_rs, erase_pos=erase_pos)
+                    
+                    output[i*FRAME_OUT:(i+1)*FRAME_OUT] = list(decoded)[-24:]
                         
-                        # "then modify the symbols accordingly"
-                        output[i*FRAME_OUT:(i+1)*FRAME_OUT] = list(decoded_hints)[-24:]
-                        # erasure_flags_out remains 0
-                        
-                    except Exception:
-                        # Correction failed
-                        # "else assign erasure flags to all symbols of the received word"
-                        output[i*FRAME_OUT:(i+1)*FRAME_OUT] = frame_rs[:24]
-                        erasure_flags_out[i*FRAME_OUT:(i+1)*FRAME_OUT] = 1
+                
                         
                 else:
                     # "else assign erasure flags to all symbols of the received word"
                     output[i*FRAME_OUT:(i+1)*FRAME_OUT] = frame_rs[:24]
                     erasure_flags_out[i*FRAME_OUT:(i+1)*FRAME_OUT] = 1
+
+        n_frames = len(output) // 24
 
             
 
