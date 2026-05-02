@@ -95,11 +95,14 @@ Since $\deg p = 8$, any factorisation would include a factor of degree $\leq 4$.
 
 \paragraph{Primitivity.}
 Let $\alpha$ be a root of $p(D)$, giving us the reduction rule $\alpha^8 = \alpha^4 + \alpha^3 + \alpha^2 + 1$.
-Since $255 = 3 \times 5 \times 17$, it suffices to check that $\alpha^d \neq 1$ for $d \in \{85, 51, 15\}$. Computing powers via repeated multiplication and reduction:
+Since $255 = 3 \times 5 \times 17$, it suffices to check that $\alpha^d \neq 1$ for $d \in \{85, 51, 15\}$. We compute each power by repeated multiplication and reduce using $\alpha^8 = \alpha^4 + \alpha^3 + \alpha^2 + 1$. To confirm the result is not $1$, we convert the polynomial form to an integer: an element $\sum_i c_i \alpha^i$ with $c_i \in \{0,1\}$ corresponds to the byte $\sum_i c_i \cdot 2^i$, so $1 = \alpha^0$ maps to the integer $1$.
 \begin{align*}
-\alpha^{15} &= \alpha^5 + \alpha^2 + \alpha = 38 \neq 1,\\
-\alpha^{51} &= 10 \neq 1,\\
-\alpha^{85} &= 214 \neq 1.
+\alpha^{15} &= \alpha^5 + \alpha^2 + \alpha
+= 2^5 + 2^2 + 2^1 = 38 \neq 1,\\
+\alpha^{51} &= \alpha^3 + \alpha
+= 2^3 + 2^1 = 10 \neq 1,\\
+\alpha^{85} &= \alpha^7 + \alpha^6 + \alpha^4 + \alpha^2 + \alpha
+= 2^7 + 2^6 + 2^4 + 2^2 + 2^1 = 214 \neq 1.
 \end{align*}
 Meanwhile $\alpha^{255} = 1$ because $|\text{GF}(2^8)^*| = 255$. So the order of $\alpha$ is exactly 255, and $p(D)$ is primitive.
 
